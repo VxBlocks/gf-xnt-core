@@ -351,6 +351,18 @@ pub struct Args {
     #[clap(long, default_value = "9899", value_name = "PORT")]
     pub rpc_port: u16,
 
+    /// Enable REST API server.
+    #[clap(long)]
+    pub(crate) rest_api_enable: bool,
+
+    /// Listening port for REST API server.
+    #[clap(long, default_value = "9900", value_name = "PORT")]
+    pub(crate) rest_port: Option<u16>,
+
+    /// Listening address for REST API server.
+    #[clap(long, default_value = "127.0.0.1", value_name = "LISTENING_ADDRESS")]
+    pub(crate) rest_listening_address: Option<String>,
+
     /// IP on which to listen for peer connections. Will default to all network interfaces, IPv4 and IPv6.
     #[clap(short, long, default_value = "::")]
     pub peer_listen_addr: IpAddr,
