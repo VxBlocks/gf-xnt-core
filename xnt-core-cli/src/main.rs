@@ -256,6 +256,22 @@ enum Command {
         notify_other: UtxoNotificationMedium,
     },
 
+    /// send a payment with time locked coins to a single recipient
+    SendLocked {
+        /// recipient's address
+        address: String,
+
+        /// amount to send
+        #[clap(value_parser = NativeCurrencyAmount::coins_from_str)]
+        amount: NativeCurrencyAmount,
+
+        /// transaction fee
+        #[clap(value_parser = NativeCurrencyAmount::coins_from_str)]
+        fee: NativeCurrencyAmount,
+
+        release_after_seconds: u64
+    },
+
     /// send a payment to one or more recipients
     SendToMany {
         #[clap(long, value_parser, required = false)]
@@ -1122,6 +1138,62 @@ async fn main() -> Result<()> {
                         notify_other,
                     )],
                     ChangePolicy::recover_to_next_unused_key(KeyType::Symmetric, notify_self),
+                    fee,
+                )
+                .await?;
+            let tx_artifacts = match resp {
+                Ok(v) => v,
+                Err(e) => {
+                    eprintln!("{e}");
+                    bail!("Failed to create transaction.");
+                }
+            };
+
+            println!(
+                "Successfully created transaction: {}",
+                tx_artifacts.transaction().txid()
+            );
+
+            process_utxo_notifications(
+                &data_directory,
+                network,
+                tx_artifacts.all_offchain_notifications(),
+                Some(receiver_tag),
+            )?
+        }
+        Command::SendLocked {
+            address,
+            amount,
+            fee,
+            release_after_seconds
+        } => {
+            // Parse on client
+            let receiver_tag = String::from_str("").unwrap();
+
+            let receiving_address = ReceivingAddress::from_bech32m(&address, network)?;
+            let now = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_millis();
+            let release_time = now + (release_after_seconds as u128) * 1000;
+            let release_timestamp = Timestamp(BFieldElement::new(release_time as u64));
+
+            // abort early on negative fee
+            if fee.is_negative() {
+                eprintln!("Fee must be non-negative.");
+                bail!("Failed to create transaction.");
+            }
+
+            let resp = client
+                .send(
+                    ctx,
+                    token,
+                    vec![OutputFormat::AddressAndAmountAndReleaseDate(
+                        receiving_address,
+                        amount,
+                        release_timestamp,
+                    )],
+                    ChangePolicy::recover_to_next_unused_key(KeyType::Symmetric, UtxoNotificationMedium::OnChain),
                     fee,
                 )
                 .await?;
