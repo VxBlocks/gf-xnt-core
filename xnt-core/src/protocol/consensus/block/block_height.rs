@@ -41,10 +41,9 @@ use tasm_lib::twenty_first::math::bfield_codec::BFieldCodec;
 #[cfg_attr(any(test, feature = "arbitrary-impls"), derive(Arbitrary))]
 pub struct BlockHeight(BFieldElement);
 
-// Assuming a block time of 588 seconds, and a halving every three years,
-// the number of blocks per halving cycle is 160815.
-pub const BLOCKS_PER_GENERATION: u64 = 160815;
-pub const NUM_BLOCKS_SKIPPED_BECAUSE_REBOOT: u64 = 21310;
+// Assuming a block time of 300 seconds
+// the number of blocks per reduction cycle is 8640.
+pub const BLOCKS_PER_GENERATION: u64 = 8640;
 
 impl BlockHeight {
     pub const MAX: u64 = BFieldElement::MAX;
@@ -60,7 +59,6 @@ impl BlockHeight {
     pub fn get_generation(&self) -> u64 {
         self.0
             .value()
-            .saturating_add(NUM_BLOCKS_SKIPPED_BECAUSE_REBOOT)
             / BLOCKS_PER_GENERATION
     }
 
@@ -190,18 +188,18 @@ mod tests {
     }
 
     #[test]
-    fn block_interval_times_generation_count_is_three_years() {
+    fn block_interval_times_generation_count_is_30_days() {
         let network = Network::Main;
         let calculated_halving_time =
             network.target_block_interval() * (BLOCKS_PER_GENERATION as usize);
         let calculated_halving_time = calculated_halving_time.to_millis();
-        let three_years = Timestamp::years(3);
-        let three_years = three_years.to_millis();
+        let thirty_days = Timestamp::days(30);
+        let thirty_days = thirty_days.to_millis();
         assert!(
-            (calculated_halving_time as f64) * 1.01 > three_years as f64
-                && (calculated_halving_time as f64) * 0.99 < three_years as f64,
-            "target halving time must be within 1 % of 3 years. Got:\n\
-            three years = {three_years}ms\n calculated_halving_time = {calculated_halving_time}ms"
+            (calculated_halving_time as f64) * 1.01 > thirty_days as f64
+                && (calculated_halving_time as f64) * 0.99 < thirty_days as f64,
+            "target halving time must be within 1 % of 30 days. Got:\n\
+            thirty days = {thirty_days}ms\n calculated_halving_time = {calculated_halving_time}ms"
         );
     }
 }

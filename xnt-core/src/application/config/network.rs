@@ -50,8 +50,8 @@ impl Network {
     }
 
     pub fn launch_date(&self) -> Timestamp {
-        // 5 August 2025, 19:00:00 UTC
-        Timestamp(BFieldElement::new(1754420400000u64))
+        // Wednesday, 26 November 2025 23:22:07
+        Timestamp(BFieldElement::new(1764199327000))
     }
 
     /// indicates if the network uses mock proofs
@@ -118,11 +118,11 @@ impl Network {
     /// desired/average time between blocks.
     ///
     /// - for regtest: 100 milliseconds.
-    /// - for mainnet and others: 588000 milliseconds equals 9.8 minutes.
+    /// - for mainnet and others: 300000 milliseconds equals 5 minutes.
     pub fn target_block_interval(&self) -> Timestamp {
         match *self {
             Self::RegTest => Timestamp::millis(100),
-            Self::Main | Self::Testnet(_) | Self::TestnetMock => Timestamp::millis(588000),
+            Self::Main | Self::Testnet(_) | Self::TestnetMock => Timestamp::millis(300000),
         }
     }
 
@@ -130,7 +130,7 @@ impl Network {
     ///
     /// note: we disable auto-mining in regtest mode because it generates blocks
     /// very quickly and that is not a good fit when mining is enabled for
-    /// duration of the neptune-core process as blockchain grows very quickly.
+    /// duration of the xnt-core process as blockchain grows very quickly.
     ///
     /// instead developers are encouraged to use [crate::api::regtest] module to
     /// generate any number of blocks in a controlled, deterministic fashion.
