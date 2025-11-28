@@ -269,7 +269,7 @@ enum Command {
         #[clap(value_parser = NativeCurrencyAmount::coins_from_str)]
         fee: NativeCurrencyAmount,
 
-        release_after_seconds: u64
+        release_after_seconds: u64,
     },
 
     /// send a payment to one or more recipients
@@ -1167,7 +1167,7 @@ async fn main() -> Result<()> {
             address,
             amount,
             fee,
-            release_after_seconds
+            release_after_seconds,
         } => {
             // Parse on client
             let receiver_tag = String::from_str("").unwrap();
@@ -1177,7 +1177,7 @@ async fn main() -> Result<()> {
                 .duration_since(UNIX_EPOCH)
                 .unwrap()
                 .as_millis();
-            let release_time = now + (release_after_seconds as u128) * 1000;
+            let release_time = now + u128::from(release_after_seconds) * 1000;
             let release_timestamp = Timestamp(BFieldElement::new(release_time as u64));
 
             // abort early on negative fee
@@ -1195,7 +1195,10 @@ async fn main() -> Result<()> {
                         amount,
                         release_timestamp,
                     )],
-                    ChangePolicy::recover_to_next_unused_key(KeyType::Symmetric, UtxoNotificationMedium::OnChain),
+                    ChangePolicy::recover_to_next_unused_key(
+                        KeyType::Symmetric,
+                        UtxoNotificationMedium::OnChain,
+                    ),
                     fee,
                 )
                 .await?;

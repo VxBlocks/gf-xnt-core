@@ -705,7 +705,7 @@ impl WalletState {
     }
 
     /// Return UTXOs spent by this wallet in the transaction
-    async fn scan_for_spent_utxos(
+    pub(crate) async fn scan_for_spent_utxos(
         &self,
         transaction_kernel: &TransactionKernel,
     ) -> HashMap<AbsoluteIndexSet, (Utxo, u64)> {
@@ -1873,6 +1873,68 @@ impl WalletState {
                 )
             },
         )
+    }
+
+    /// Returns spendable inputs sufficient to cover the requested amount.
+    ///
+    /// Similar to `spendable_inputs` but stops early once sufficient funds
+    /// are accumulated.
+    pub(crate) fn spendable_inputs_by_amount(
+        &self,
+        wallet_status: WalletStatus,
+        timestamp: Timestamp,
+        spend_amount: NativeCurrencyAmount,
+    ) -> Vec<TxInput> {
+        // Build a hashset of all tx inputs presently in the mempool.
+        let index_sets_of_inputs_in_mempool_txs: HashSet<AbsoluteIndexSet> = self
+            .mempool_spent_utxos
+            .iter()
+            .flat_map(|(_txkid, tx_inputs)| tx_inputs.keys())
+            .copied()
+            .collect();
+
+        let mut input_funds = vec![];
+        let mut accumulated = NativeCurrencyAmount::zero();
+
+        for (wallet_status_element, membership_proof) in wallet_status.synced_unspent {
+            if accumulated >= spend_amount {
+                break;
+            }
+
+            // filter out UTXOs that are still timelocked.
+            if !wallet_status_element.utxo.can_spend_at(timestamp) {
+                continue;
+            }
+
+            // filter out inputs that are already spent by txs in mempool.
+            let absolute_index_set =
+                membership_proof.compute_indices(Tip5::hash(&wallet_status_element.utxo));
+            if index_sets_of_inputs_in_mempool_txs.contains(&absolute_index_set) {
+                continue;
+            }
+
+            // filter out inputs that we can't spend
+            let Some(spending_key) = self.find_spending_key_for_utxo(&wallet_status_element.utxo)
+            else {
+                warn!(
+                    "spending key not found for utxo: {:?}",
+                    wallet_status_element.utxo
+                );
+                continue;
+            };
+
+            accumulated += wallet_status_element.utxo.get_native_currency_amount();
+            input_funds.push(
+                UnlockedUtxo::unlock(
+                    wallet_status_element.utxo.clone(),
+                    spending_key.lock_script_and_witness(),
+                    membership_proof.clone(),
+                )
+                .into(),
+            );
+        }
+
+        input_funds
     }
 
     /// Allocate sufficient UTXOs to generate a transaction.

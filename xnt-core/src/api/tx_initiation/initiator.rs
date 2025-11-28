@@ -67,6 +67,23 @@ impl TransactionInitiator {
             .into()
     }
 
+    /// returns spendable inputs sufficient to cover the requested amount.
+    ///
+    /// This is an optimized version that stops early once sufficient funds
+    /// are accumulated, avoiding processing all UTXOs.
+    pub async fn spendable_inputs_by_amount(
+        &self,
+        spend_amount: NativeCurrencyAmount,
+        timestamp: Timestamp,
+    ) -> TxInputList {
+        self.global_state_lock
+            .lock_guard()
+            .await
+            .wallet_spendable_inputs_by_amount(timestamp, spend_amount)
+            .await
+            .into()
+    }
+
     /// retrieve spendable inputs sufficient to cover spend_amount by applying selection policy.
     ///
     /// see [InputSelectionPolicy] for a description of available policies.
@@ -80,6 +97,28 @@ impl TransactionInitiator {
     ) -> impl IntoIterator<Item = TxInput> {
         TxInputListBuilder::new()
             .spendable_inputs(self.spendable_inputs(timestamp).await.into())
+            .policy(policy)
+            .spend_amount(spend_amount)
+            .build()
+    }
+
+    /// retrieve spendable inputs sufficient to cover spend_amount by applying selection policy.
+    ///
+    /// see [InputSelectionPolicy] for a description of available policies.
+    ///
+    /// see [TxInputListBuilder] for details.
+    pub async fn select_spendable_inputs_by_amount(
+        &self,
+        policy: InputSelectionPolicy,
+        spend_amount: NativeCurrencyAmount,
+        timestamp: Timestamp,
+    ) -> impl IntoIterator<Item = TxInput> {
+        TxInputListBuilder::new()
+            .spendable_inputs(
+                self.spendable_inputs_by_amount(spend_amount, timestamp)
+                    .await
+                    .into(),
+            )
             .policy(policy)
             .spend_amount(spend_amount)
             .build()
