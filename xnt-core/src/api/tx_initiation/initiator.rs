@@ -85,7 +85,11 @@ impl TransactionInitiator {
         exclude_recent_blocks: usize,
     ) -> impl IntoIterator<Item = TxInput> {
         TxInputListBuilder::new()
-            .spendable_inputs(self.spendable_inputs(timestamp, exclude_recent_blocks).await.into())
+            .spendable_inputs(
+                self.spendable_inputs(timestamp, exclude_recent_blocks)
+                    .await
+                    .into(),
+            )
             .policy(policy)
             .spend_amount(spend_amount)
             .build()
@@ -248,8 +252,15 @@ impl TransactionInitiator {
         timestamp: Timestamp,
         exclude_recent_blocks: usize,
     ) -> Result<TxCreationArtifacts, error::SendError> {
-        self.send_inner(outputs, change_policy, fee, timestamp, false, exclude_recent_blocks)
-            .await
+        self.send_inner(
+            outputs,
+            change_policy,
+            fee,
+            timestamp,
+            false,
+            exclude_recent_blocks,
+        )
+        .await
     }
 
     /// Build and broadcast a *transparent* transaction.
@@ -266,8 +277,15 @@ impl TransactionInitiator {
         timestamp: Timestamp,
         exclude_recent_blocks: usize,
     ) -> Result<TxCreationArtifacts, error::SendError> {
-        self.send_inner(outputs, change_policy, fee, timestamp, true, exclude_recent_blocks)
-            .await
+        self.send_inner(
+            outputs,
+            change_policy,
+            fee,
+            timestamp,
+            true,
+            exclude_recent_blocks,
+        )
+        .await
     }
 
     /// Build a transaction and broadcast it.
@@ -301,7 +319,7 @@ impl TransactionInitiator {
 
         // select inputs
         let spend_amount = tx_outputs.total_native_coins() + fee;
-        let policy = InputSelectionPolicy::ByNativeCoinAmount(SortOrder::Descending);
+        let policy = InputSelectionPolicy::ByNativeCoinAmount(SortOrder::Ascending);
         let tx_inputs = self
             .select_spendable_inputs(policy, spend_amount, timestamp, exclude_recent_blocks)
             .await

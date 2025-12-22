@@ -1046,7 +1046,7 @@ impl RpcApi for RpcServer {
         let tx_initiator = TransactionInitiator::from(self.state.clone());
         let selected_inputs: Vec<TxInput> = tx_initiator
             .select_spendable_inputs(
-                InputSelectionPolicy::ByNativeCoinAmount(SortOrder::Descending),
+                InputSelectionPolicy::ByNativeCoinAmount(SortOrder::Ascending),
                 target_amount,
                 Timestamp::now(),
                 request.exclude_recent_blocks,
