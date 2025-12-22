@@ -1843,20 +1843,13 @@ impl WalletState {
         // After 3 blocks, if the transaction hasn't confirmed, UTXOs become spendable again.
         let sent_tx_aocl_indices: HashSet<u64> = {
             let sent_txs = self.wallet_db.sent_transactions();
-            let total_len = sent_txs.len().await;
-            let start = total_len.saturating_sub(1000);
-            let stream = sent_txs.stream_many_values(start..total_len);
+            let len = sent_txs.len().await;
+            // Iterate in reverse order (newest first), take up to 1000
+            let stream = sent_txs.stream_many_values((0..len).rev().take(1000));
             pin_mut!(stream);
 
-            // Collect and sort by timestamp descending (newest first)
-            let mut recent_txs = Vec::new();
-            while let Some(sent_tx) = stream.next().await {
-                recent_txs.push(sent_tx);
-            }
-            recent_txs.sort_by(|a, b| b.timestamp.cmp(&a.timestamp));
-
             let mut indices = HashSet::new();
-            for sent_tx in recent_txs {
+            while let Some(sent_tx) = stream.next().await {
                 // Only filter UTXOs from transactions sent within recent blocks
                 if recent_tips.contains(&sent_tx.tip_when_sent) {
                     for (aocl_index, _utxo) in sent_tx.tx_inputs {
