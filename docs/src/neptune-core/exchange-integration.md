@@ -123,7 +123,7 @@ curl -X POST -H "Content-Type: application/json" \
 confirmations = current_height - block_height + 1
 ```
 
-**Recommended confirmations:** 10+ for deposits
+**Recommended confirmations:** 30+ for deposits
 
 ---
 
