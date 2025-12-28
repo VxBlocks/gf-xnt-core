@@ -1,6 +1,6 @@
-# Exchange Integration Guide
+# XNT Exchange Integration Guide
 
-This guide covers integrating Neptune Core for cryptocurrency exchanges.
+This guide covers integrating Neptune for cryptocurrency exchanges.
 
 ---
 
