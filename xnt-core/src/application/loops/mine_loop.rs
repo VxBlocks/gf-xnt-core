@@ -602,7 +602,7 @@ pub(crate) async fn create_block_transaction_from(
         };
 
         // Try to find a nop-tx in the mempool.  If found, use that instead.
-        transactions_to_merge =match &tx_merge_origin {
+        transactions_to_merge = match &tx_merge_origin {
             TxMergeOrigin::Mempool => global_state_lock
                 .lock_guard()
                 .await
